@@ -13,6 +13,8 @@ uv sync
 uv run uvicorn main:app --host 0.0.0.0 --port 8000
 ```
 
+Every push builds a container image and publishes it to GitHub Container Registry. The included [Compose file](compose.yaml) pulls that image and keeps the SQLite database in a persistent named volume.
+
 >[!WARNING]
 > **Help Needed**
 > There are 2 polls and one unknown web embed that have not been archived. If you know what used to be there or the poll questions, PLEASE open an issue or contact me another way. The complete list of online-dependent content and its current preservation status is in the [preservation checklist](checklist.md).

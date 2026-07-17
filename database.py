@@ -1,9 +1,13 @@
+import os
 import sqlite3
 from datetime import datetime
 from pathlib import Path
 
 
-DATABASE_PATH = Path(__file__).resolve().parent / "portal.db"
+DEFAULT_DATABASE_PATH = Path(__file__).resolve().parent / "portal.db"
+DATABASE_PATH = Path(
+    os.environ.get("TFHOP2_DATABASE_PATH", DEFAULT_DATABASE_PATH)
+)
 
 
 def initialize_database():

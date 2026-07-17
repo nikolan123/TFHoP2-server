@@ -1,0 +1,9 @@
+.git
+.github
+.ruff_cache
+.venv
+__pycache__
+*.py[oc]
+portal.db
+portal.db-shm
+portal.db-wal

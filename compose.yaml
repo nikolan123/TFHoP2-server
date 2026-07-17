@@ -1,0 +1,12 @@
+services:
+  server:
+    image: ghcr.io/nikolan123/tfhop2-server:latest
+    container_name: tfhop2-server
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    volumes:
+      - tfhop2-data:/data
+
+volumes:
+  tfhop2-data:
