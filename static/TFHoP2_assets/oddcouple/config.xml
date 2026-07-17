@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<manifest xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" usedSchemaVersion="1.0">
+  <widget widgetVersion="1.0">
+    <description>360 viewer. Provide file ref to a zip with images that will be shown in the
+      360.</description>
+    <rootfile>index.html</rootfile>
+    <properties>
+      <fileListProperty id="360files">
+        <description>The images for the 360 Viewer in a .zip file.</description>
+        <label>Images (.zip file)</label>
+        <objectTypes>
+          <objectType type="Other">
+            <format>application/zip</format>
+          </objectType>
+        </objectTypes>
+        
+      <values><listItem id="360files_0">assets/prop_360files/portal_bots_turntable 01.jpg</listItem><listItem id="360files_1">assets/prop_360files/portal_bots_turntable 02.jpg</listItem><listItem id="360files_2">assets/prop_360files/portal_bots_turntable 03.jpg</listItem><listItem id="360files_3">assets/prop_360files/portal_bots_turntable 04.jpg</listItem><listItem id="360files_4">assets/prop_360files/portal_bots_turntable 05.jpg</listItem><listItem id="360files_5">assets/prop_360files/portal_bots_turntable 06.jpg</listItem><listItem id="360files_6">assets/prop_360files/portal_bots_turntable 07.jpg</listItem><listItem id="360files_7">assets/prop_360files/portal_bots_turntable 08.jpg</listItem><listItem id="360files_8">assets/prop_360files/portal_bots_turntable 09.jpg</listItem><listItem id="360files_9">assets/prop_360files/portal_bots_turntable 10.jpg</listItem></values></fileListProperty>
+    </properties>
+  </widget>
+</manifest>

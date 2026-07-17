@@ -1,0 +1,788 @@
+<!--
+  Recreation of the original "How a Portal Works" diagram.
+  Recovered original: static/TFHoP2_assets/howto-original/diagram.html
+  Original route: /TFHoP2_assets/howto/diagram.html
+-->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>How a Portal Works</title>
+</head>
+<body>
+<div id="portal-physics-demo">
+  <div class="portal-status" aria-live="polite">Drag the test subject, then drop him over the blue portal.</div>
+  <canvas width="480" height="360" role="img" aria-label="Interactive portal fling demonstration with a blue floor portal, orange wall portal, draggable test subject, and opposite platform."></canvas>
+</div>
+
+<style>
+html, body {
+  margin: 0;
+  overflow: hidden;
+  background: #fff;
+  color: #111;
+}
+
+#portal-physics-demo {
+  width: 480px;
+  max-width: 100%;
+  user-select: none;
+}
+
+#portal-physics-demo .portal-status {
+  /* Retained for internal state updates, but hidden in the ebook's fixed frame. */
+  display: none;
+}
+
+#portal-physics-demo canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  background: #fff;
+  border: 1px solid #b7b7b7;
+  cursor: grab;
+  touch-action: none;
+}
+
+#portal-physics-demo canvas.is-dragging {
+  cursor: grabbing;
+}
+</style>
+
+<script>
+(function () {
+  var root = document.getElementById('portal-physics-demo');
+  var canvas = root.querySelector('canvas');
+  var status = root.querySelector('.portal-status');
+  var ctx = canvas.getContext('2d');
+  var W = canvas.width;
+  var H = canvas.height;
+
+  function fitCanvasToFrame() {
+    var displayedWidth = canvas.offsetWidth || W;
+    canvas.style.height = Math.round(displayedWidth * H / W) + 'px';
+  }
+
+  fitCanvasToFrame();
+  window.addEventListener('resize', fitCanvasToFrame, false);
+
+  var leftPlatform = { x: 0, y: 255, w: 92, h: 105, depthX: 36, depthY: 26 };
+  var rightPlatform = { x: 320, y: 220, w: 140, h: 140, depthX: 36, depthY: 26 };
+  var floorPortal = { x: 170, y: 344, w: 104, h: 10 };
+  var wallPortal = { x: 18, y: 7, w: 14, h: 104 };
+  var wallPortalExitX = wallPortal.x - 14 + 52 * 0.8;
+  var floorBackY = 334;
+  var wallEdgeX = 36;
+  var subject = { x: 62, y: 225, vx: 0, vy: 0, cooldown: 0, flings: 0 };
+
+  var dragging = false;
+  var dragSafeInset = 5;
+  var pointerOutside = false;
+  var dragPortalDepth = 0;
+  var dragVelocityX = 0;
+  var dragVelocityY = 0;
+  var lastDragTime = 0;
+  var dropReleaseY = subject.y;
+  var landingBounceUsed = false;
+  var landingBounceActive = false;
+  var landingBouncePlatformY = 0;
+  var landed = true;
+  var portalEntryAnimation = null;
+  var portalExit = null;
+  var animationTime = 0;
+  var victoryStart = -1;
+  var portalUsedThisRun = false;
+  var releasePose = null;
+  var releasePoseStart = 0;
+  var grabStart = 0;
+  var requestFrame = window.requestAnimationFrame || window.webkitRequestAnimationFrame || function (callback) {
+    return window.setTimeout(function () { callback(Date.now()); }, 16);
+  };
+  var previousTime = Date.now();
+
+  function setStatus(message) {
+    status.textContent = message;
+  }
+
+  function resetSubject(message) {
+    subject.x = 62;
+    subject.y = 225;
+    subject.vx = 0;
+    subject.vy = 0;
+    subject.cooldown = 0;
+    subject.flings = 0;
+    portalEntryAnimation = null;
+    portalExit = null;
+    victoryStart = -1;
+    portalUsedThisRun = false;
+    releasePose = null;
+    landingBounceUsed = false;
+    landingBounceActive = false;
+    landingBouncePlatformY = 0;
+    landed = true;
+    setStatus(message || 'Drag the test subject, then drop him over the blue portal.');
+  }
+
+  function pointerPosition(event) {
+    var rect = canvas.getBoundingClientRect();
+    return {
+      x: (event.clientX - rect.left) * W / rect.width,
+      y: (event.clientY - rect.top) * H / rect.height
+    };
+  }
+
+  function primaryButtonIsUp(event) {
+    if (typeof event.buttons === 'number') return (event.buttons & 1) === 0;
+    if (typeof event.which === 'number') return event.which === 0;
+    return false;
+  }
+
+  function portalOverlapDepth(x, y) {
+    var overBluePortal = x >= floorPortal.x + 6 && x <= floorPortal.x + floorPortal.w - 6;
+    return overBluePortal ? Math.max(0, Math.min(52, y + 26 - floorPortal.y)) : 0;
+  }
+
+  function subjectHit(point) {
+    return Math.abs(point.x - subject.x) <= 24 && Math.abs(point.y - subject.y) <= 31;
+  }
+
+  function keepDragAbovePlatform(x, y, platform) {
+    if (x < platform.x || x > platform.x + platform.w) return y;
+    return y + 26 > platform.y ? platform.y - 26 : y;
+  }
+
+  canvas.addEventListener('mousedown', function (event) {
+    var point = pointerPosition(event);
+    if (!subjectHit(point)) return;
+    dragging = true;
+    pointerOutside = false;
+    grabStart = animationTime;
+    landed = false;
+    subject.vx = 0;
+    subject.vy = 0;
+    subject.flings = 0;
+    portalEntryAnimation = null;
+    portalExit = null;
+    victoryStart = -1;
+    portalUsedThisRun = false;
+    releasePose = null;
+    dragPortalDepth = 0;
+    dragVelocityX = 0;
+    dragVelocityY = 0;
+    lastDragTime = Date.now();
+    landingBounceUsed = false;
+    landingBounceActive = false;
+    landingBouncePlatformY = 0;
+    canvas.classList.add('is-dragging');
+    setStatus('Release the test subject above the blue portal.');
+    event.preventDefault();
+  });
+
+  window.addEventListener('mousemove', function (event) {
+    if (!dragging) return;
+    var point = pointerPosition(event);
+
+    if (!isFinite(point.x) || !isFinite(point.y) ||
+        point.x < dragSafeInset || point.x > W - dragSafeInset ||
+        point.y < dragSafeInset || point.y > H - dragSafeInset) {
+      pointerOutside = true;
+      return;
+    }
+
+    if (pointerOutside && primaryButtonIsUp(event)) {
+      releaseSubject(event);
+      return;
+    }
+    pointerOutside = false;
+
+    var previousDepth = dragPortalDepth;
+    var now = Date.now();
+    var elapsed = Math.max(0.008, Math.min(0.08, (now - lastDragTime) / 1000));
+    var nextX = Math.max(24 + dragSafeInset, Math.min(W - 24 - dragSafeInset, point.x));
+    var nextY = Math.max(31 + dragSafeInset, Math.min(H - dragSafeInset, point.y));
+    nextY = keepDragAbovePlatform(nextX, nextY, leftPlatform);
+    nextY = keepDragAbovePlatform(nextX, nextY, rightPlatform);
+    var instantVelocityX = (nextX - subject.x) / elapsed;
+    var instantVelocityY = (nextY - subject.y) / elapsed;
+    dragVelocityX = dragVelocityX * 0.58 + instantVelocityX * 0.42;
+    dragVelocityY = dragVelocityY * 0.58 + instantVelocityY * 0.42;
+    lastDragTime = now;
+    subject.x = nextX;
+    subject.y = nextY;
+
+    dragPortalDepth = portalOverlapDepth(subject.x, subject.y);
+
+    if (dragPortalDepth > 0) {
+      setStatus('Keep dragging—the test subject is emerging from the orange portal.');
+    } else if (previousDepth > 0) {
+      setStatus('Pull him back, or push him through and release to complete the transfer.');
+    }
+  });
+
+  function releaseSubject(event) {
+    if (!dragging) return;
+    var releasedPortalDepth = dragPortalDepth;
+    var completePortalTransfer = releasedPortalDepth > 0;
+    dropReleaseY = subject.y;
+    var idleDecay = Math.exp(-Math.max(0, Date.now() - lastDragTime) / 120);
+    var releaseVelocityX = Math.max(-80, Math.min(80, dragVelocityX * 0.18 * idleDecay));
+    var releaseVelocityY = Math.max(-60, Math.min(100, dragVelocityY * 0.16 * idleDecay));
+    releasePose = subjectPose();
+    releasePoseStart = animationTime;
+    dragging = false;
+    pointerOutside = false;
+    subject.vx = releaseVelocityX;
+    subject.vy = releaseVelocityY;
+    dragPortalDepth = 0;
+    canvas.classList.remove('is-dragging');
+
+    if (completePortalTransfer) {
+      portalUsedThisRun = true;
+      var exitX = wallPortal.x + 24;
+      var floorY = floorPortal.y - 26;
+      var exitY = wallPortal.y + wallPortal.h / 2;
+      var timeToFloor = Math.sqrt(2 * Math.max(0, floorY - exitY) / 820);
+      var linedUpSpeed = (floorPortal.x + floorPortal.w / 2 - exitX) / timeToFloor;
+      beginPortalEntry(linedUpSpeed);
+      subject.flings = 1;
+      landingBounceUsed = false;
+      landingBounceActive = false;
+      landingBouncePlatformY = 0;
+      setStatus('Portal transfer complete—lined up for a guaranteed double fling!');
+    } else {
+      setStatus('Released—speedy thing goes in, speedy thing comes out.');
+    }
+  }
+
+  canvas.addEventListener('mouseout', function () {
+    if (dragging) pointerOutside = true;
+  }, false);
+  document.addEventListener('mouseup', releaseSubject, true);
+  window.addEventListener('mouseup', releaseSubject, true);
+  window.addEventListener('blur', releaseSubject, false);
+
+  function portalEntry(currentBottom) {
+    return subject.cooldown <= 0 && subject.vy > 0 &&
+      currentBottom >= floorPortal.y && subject.y - 22 <= floorPortal.y + 6 &&
+      subject.x >= floorPortal.x + 8 && subject.x <= floorPortal.x + floorPortal.w - 8;
+  }
+
+  function beginPortalEntry(exitSpeed) {
+    var endY = floorPortal.y + 30;
+    var remainingDistance = Math.max(0, endY - subject.y);
+    var incomingSpeed = Math.max(
+      240,
+      Math.sqrt(subject.vx * subject.vx + subject.vy * subject.vy)
+    );
+    subject.vx = 0;
+    subject.vy = 0;
+    portalEntryAnimation = {
+      startY: subject.y,
+      endY: endY,
+      elapsed: 0,
+      duration: Math.max(0.025, remainingDistance / incomingSpeed),
+      exitSpeed: exitSpeed
+    };
+  }
+
+  function beginPortalExit(startX, exitSpeed) {
+    var endX = wallPortalExitX;
+    subject.x = Math.min(startX, endX);
+    subject.y = wallPortal.y + wallPortal.h / 2;
+    subject.vx = 0;
+    subject.vy = 0;
+    subject.cooldown = 0.18;
+
+    if (endX - subject.x < 0.5) {
+      subject.x = endX;
+      subject.vx = exitSpeed;
+      portalExit = null;
+      return;
+    }
+
+    portalExit = {
+      startX: subject.x,
+      endX: endX,
+      elapsed: 0,
+      duration: Math.max(0.045, Math.min(0.11,
+        (endX - subject.x) / Math.max(350, Math.abs(exitSpeed))
+      )),
+      exitSpeed: exitSpeed
+    };
+  }
+
+  function update(dt) {
+    if (dragging || landed) return;
+
+    if (portalEntryAnimation) {
+      portalEntryAnimation.elapsed += dt;
+      var entryProgress = Math.min(1, portalEntryAnimation.elapsed / portalEntryAnimation.duration);
+      subject.y = portalEntryAnimation.startY +
+        (portalEntryAnimation.endY - portalEntryAnimation.startY) * entryProgress;
+
+      if (entryProgress >= 1) {
+        var remainingFrameTime = Math.max(
+          0,
+          portalEntryAnimation.elapsed - portalEntryAnimation.duration
+        );
+        var entryExitSpeed = portalEntryAnimation.exitSpeed;
+        portalEntryAnimation = null;
+        beginPortalExit(wallPortalExitX, entryExitSpeed);
+        if (!portalExit && remainingFrameTime > 0) {
+          subject.x += subject.vx * remainingFrameTime;
+        }
+      }
+      return;
+    }
+
+    if (portalExit) {
+      portalExit.elapsed += dt;
+      var exitProgress = Math.min(1, portalExit.elapsed / portalExit.duration);
+      subject.x = portalExit.startX + (portalExit.endX - portalExit.startX) * exitProgress;
+      if (exitProgress >= 1) {
+        subject.x = portalExit.endX;
+        subject.vx = portalExit.exitSpeed;
+        subject.vy = 0;
+        portalExit = null;
+      }
+      return;
+    }
+
+    subject.cooldown = Math.max(0, subject.cooldown - dt);
+    var previousX = subject.x;
+    var previousY = subject.y;
+    var previousBottom = previousY + 26;
+
+    subject.vy += 820 * dt;
+    subject.x += subject.vx * dt;
+    subject.y += subject.vy * dt;
+
+    if (subject.x < 14) {
+      subject.x = 14;
+      subject.vx = Math.abs(subject.vx) * 0.15;
+    } else if (subject.x > W - 14) {
+      subject.x = W - 14;
+      subject.vx = -Math.abs(subject.vx) * 0.15;
+    }
+    if (subject.y < 22) {
+      subject.y = 22;
+      subject.vy = Math.max(0, subject.vy) * 0.15;
+    }
+
+    var rightSlideLimit = rightPlatform.x + rightPlatform.w - 13;
+    if (landingBounceUsed && subject.x >= rightPlatform.x &&
+        subject.x > rightSlideLimit && subject.y + 26 <= rightPlatform.y + 8) {
+      subject.x = rightSlideLimit;
+      subject.vx = 0;
+    }
+
+    var currentBottom = subject.y + 26;
+
+    if (portalEntry(currentBottom)) {
+      portalUsedThisRun = true;
+      var preservedSpeed = Math.max(220, Math.sqrt(subject.vx * subject.vx + subject.vy * subject.vy));
+      subject.flings += 1;
+      landingBounceUsed = false;
+      landingBounceActive = false;
+      landingBouncePlatformY = 0;
+
+      var exitSpeed = preservedSpeed;
+      if (subject.flings === 1) {
+        if (dropReleaseY > 220) {
+          var floorY = floorPortal.y - 26;
+          var timeToFloor = Math.sqrt(2 * Math.max(0, floorY - (wallPortal.y + wallPortal.h / 2)) / 820);
+          exitSpeed = (floorPortal.x + floorPortal.w / 2 - (wallPortal.x + 24)) / timeToFloor;
+          setStatus('First fling lined up—fall back through the blue portal for a double fling!');
+        } else {
+          exitSpeed = Math.min(Math.max(exitSpeed, 500), 520);
+          setStatus('Direct fling—enough momentum to reach the opposite platform!');
+        }
+      } else {
+        exitSpeed = Math.min(Math.max(exitSpeed, 540), 560);
+        setStatus('Double fling! Extra momentum preserved.');
+      }
+
+      beginPortalEntry(exitSpeed);
+      return;
+    }
+
+    var crossedRightTop = subject.vy >= 0 && previousY + 26 <= rightPlatform.y && currentBottom >= rightPlatform.y;
+    if (crossedRightTop && subject.x + 12 >= rightPlatform.x && subject.x - 12 <= rightPlatform.x + rightPlatform.w) {
+      subject.y = rightPlatform.y - 26;
+      if (!landingBounceUsed) {
+        landingBounceUsed = true;
+        landingBounceActive = true;
+        landingBouncePlatformY = rightPlatform.y;
+        subject.vx = portalUsedThisRun
+          ? (subject.flings > 1 ? 720 : 650) * 0.46
+          : subject.vx * 0.46;
+        subject.vy = -55;
+        setStatus('Soft landing—momentum carries into a slide.');
+        return;
+      }
+      landingBounceActive = false;
+      landingBouncePlatformY = 0;
+      subject.vy = 0;
+      subject.vx *= Math.exp(-8 * dt);
+      if (Math.abs(subject.vx) < 4) subject.vx = 0;
+      landed = subject.vx === 0;
+      if (landed && portalUsedThisRun && victoryStart < 0) victoryStart = animationTime;
+      setStatus(subject.flings > 1 ? 'Success—double fling complete!' : 'Success! Try a lower drop and perform a double fling.');
+      return;
+    }
+
+    var crossedLeftTop = subject.vy >= 0 && previousY + 26 <= leftPlatform.y && currentBottom >= leftPlatform.y;
+    if (crossedLeftTop && subject.x + 12 >= leftPlatform.x && subject.x - 12 <= leftPlatform.x + leftPlatform.w) {
+      subject.y = leftPlatform.y - 26;
+      if (!landingBounceUsed) {
+        landingBounceUsed = true;
+        landingBounceActive = true;
+        landingBouncePlatformY = leftPlatform.y;
+        subject.vx *= 0.46;
+        subject.vy = -55;
+        setStatus('Soft landing—momentum carries into a slide.');
+        return;
+      }
+      landingBounceActive = false;
+      landingBouncePlatformY = 0;
+      subject.vy = 0;
+      subject.vx *= Math.exp(-8 * dt);
+      if (Math.abs(subject.vx) < 4) subject.vx = 0;
+      landed = subject.vx === 0;
+      setStatus(subject.vx === 0 ? 'Pick him up and try a different drop height.' : 'Sliding—momentum carries across the platform.');
+      return;
+    }
+
+    if (currentBottom >= floorPortal.y && previousBottom < floorPortal.y) {
+      subject.y = floorPortal.y - 26;
+      subject.vx = 0;
+      subject.vy = 0;
+      landed = true;
+      setStatus('Missed the portal. Pick him up and try again.');
+      return;
+    }
+
+    if (subject.x > W + 45 || subject.x < -45 || subject.y > H + 60) {
+      resetSubject('Out of bounds—try another drop height.');
+    }
+
+    if (previousX + 12 < rightPlatform.x && subject.x + 12 >= rightPlatform.x && subject.y + 25 > rightPlatform.y + 4) {
+      subject.x = rightPlatform.x - 13;
+      subject.vx *= -0.12;
+      setStatus('Not enough height. Try dropping from higher—or set up a double fling.');
+    }
+  }
+
+  function drawPlatform(platform) {
+    ctx.fillStyle = '#e9e9e9';
+    ctx.strokeStyle = '#a9a9a9';
+    ctx.lineWidth = 1;
+    ctx.fillRect(platform.x, platform.y, platform.w, platform.h);
+    ctx.strokeRect(platform.x, platform.y, platform.w, platform.h);
+
+    ctx.beginPath();
+    ctx.moveTo(platform.x, platform.y);
+    ctx.lineTo(platform.x + platform.depthX, platform.y - platform.depthY);
+    ctx.lineTo(platform.x + platform.w + platform.depthX, platform.y - platform.depthY);
+    ctx.lineTo(platform.x + platform.w, platform.y);
+    ctx.closePath();
+    ctx.fillStyle = '#fafafa';
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(platform.x + platform.w, platform.y);
+    ctx.lineTo(platform.x + platform.w + platform.depthX, platform.y - platform.depthY);
+    ctx.lineTo(platform.x + platform.w + platform.depthX, floorBackY);
+    ctx.lineTo(platform.x + platform.w, H);
+    ctx.closePath();
+    ctx.fillStyle = '#dedede';
+    ctx.fill();
+    ctx.stroke();
+  }
+
+  function ellipsePath(x, y, radiusX, radiusY) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.scale(radiusX, radiusY);
+    ctx.arc(0, 0, 1, 0, Math.PI * 2, false);
+    ctx.restore();
+  }
+
+  function drawPortals() {
+    ctx.save();
+    ctx.shadowBlur = 9;
+    ctx.shadowColor = '#58d9f5';
+    ctx.strokeStyle = '#55d2f2';
+    ctx.lineWidth = 5;
+    ctx.beginPath();
+    ellipsePath(floorPortal.x + floorPortal.w / 2, floorPortal.y, floorPortal.w / 2, floorPortal.h / 2);
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+    ctx.strokeStyle = '#b6f2ff';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    ctx.shadowBlur = 9;
+    ctx.shadowColor = '#ffb96b';
+    ctx.strokeStyle = '#ffb15c';
+    ctx.lineWidth = 5;
+    ctx.beginPath();
+    ellipsePath(wallPortal.x, wallPortal.y + wallPortal.h / 2, wallPortal.w / 2, wallPortal.h / 2);
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+    ctx.strokeStyle = '#fff08a';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function drawArrow(x, y, direction) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.fillStyle = '#fff';
+    ctx.strokeStyle = '#c8c8c8';
+    ctx.lineWidth = 1;
+    ctx.fillRect(-15, -15, 30, 30);
+    ctx.strokeRect(-15, -15, 30, 30);
+
+    if (direction === 'down') ctx.rotate(Math.PI / 2);
+    ctx.fillStyle = '#bcbcbc';
+    ctx.fillRect(-9, -3.5, 13, 7);
+    ctx.beginPath();
+    ctx.moveTo(3, -8.5);
+    ctx.lineTo(12, 0);
+    ctx.lineTo(3, 8.5);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function mix(from, to, amount) {
+    return from + (to - from) * amount;
+  }
+
+  function subjectPose() {
+    var pose = {
+      bodyBob: 0,
+      leftArmUpper: -0.28,
+      leftArmLower: -0.10,
+      rightArmUpper: 0.28,
+      rightArmLower: 0.10,
+      leftLegUpper: -0.12,
+      leftLegLower: -0.05,
+      rightLegUpper: 0.12,
+      rightLegLower: 0.05
+    };
+
+    if (dragging) {
+      var flailTime = animationTime;
+      var armWave = Math.sin(flailTime * 7.0);
+      var handWave = Math.sin(flailTime * 10.5);
+      var legKick = Math.sin(flailTime * 6.0 + 0.7);
+      var footKick = Math.sin(flailTime * 9.0 + 1.4);
+
+      var grabAmount = Math.min(1, Math.max(0, (animationTime - grabStart) / 0.20));
+      grabAmount = grabAmount * grabAmount * (3 - 2 * grabAmount);
+      var leftArmUpperTarget = -2.35 - armWave * 0.16;
+      var leftArmLowerTarget = -2.80 - handWave * 0.28;
+      var rightArmUpperTarget = 2.35 - armWave * 0.16;
+      var rightArmLowerTarget = 2.80 - handWave * 0.28;
+      var leftLegUpperTarget = -0.24 - legKick * 0.20;
+      var leftLegLowerTarget = leftLegUpperTarget + 0.28 + footKick * 0.16;
+      var rightLegUpperTarget = 0.24 - legKick * 0.20;
+      var rightLegLowerTarget = rightLegUpperTarget - 0.28 + footKick * 0.16;
+
+      pose.leftArmUpper = mix(pose.leftArmUpper, leftArmUpperTarget, grabAmount);
+      pose.leftArmLower = mix(pose.leftArmLower, leftArmLowerTarget, grabAmount);
+      pose.rightArmUpper = mix(pose.rightArmUpper, rightArmUpperTarget, grabAmount);
+      pose.rightArmLower = mix(pose.rightArmLower, rightArmLowerTarget, grabAmount);
+      pose.leftLegUpper = mix(pose.leftLegUpper, leftLegUpperTarget, grabAmount);
+      pose.leftLegLower = mix(pose.leftLegLower, leftLegLowerTarget, grabAmount);
+      pose.rightLegUpper = mix(pose.rightLegUpper, rightLegUpperTarget, grabAmount);
+      pose.rightLegLower = mix(pose.rightLegLower, rightLegLowerTarget, grabAmount);
+      return pose;
+    }
+
+    if (releasePose) {
+      var returnAmount = Math.min(1, Math.max(0, (animationTime - releasePoseStart) / 0.20));
+      returnAmount = returnAmount * returnAmount * (3 - 2 * returnAmount);
+      pose.leftArmUpper = mix(releasePose.leftArmUpper, pose.leftArmUpper, returnAmount);
+      pose.leftArmLower = mix(releasePose.leftArmLower, pose.leftArmLower, returnAmount);
+      pose.rightArmUpper = mix(releasePose.rightArmUpper, pose.rightArmUpper, returnAmount);
+      pose.rightArmLower = mix(releasePose.rightArmLower, pose.rightArmLower, returnAmount);
+      pose.leftLegUpper = mix(releasePose.leftLegUpper, pose.leftLegUpper, returnAmount);
+      pose.leftLegLower = mix(releasePose.leftLegLower, pose.leftLegLower, returnAmount);
+      pose.rightLegUpper = mix(releasePose.rightLegUpper, pose.rightLegUpper, returnAmount);
+      pose.rightLegLower = mix(releasePose.rightLegLower, pose.rightLegLower, returnAmount);
+      if (returnAmount >= 1) releasePose = null;
+      return pose;
+    }
+
+    if (victoryStart >= 0) {
+      var danceTime = animationTime - victoryStart;
+      var raised = 0;
+      if (danceTime < 0.35) raised = danceTime / 0.35;
+      else if (danceTime < 1.80) raised = 1;
+      else if (danceTime < 2.40) raised = 1 - (danceTime - 1.80) / 0.60;
+
+      if (raised > 0) {
+        var waveAmount = danceTime < 1.25 ? raised : 0;
+        var leftWave = Math.sin(danceTime * 13) * 0.28 * waveAmount;
+        var rightWave = Math.sin(danceTime * 13 + Math.PI) * 0.28 * waveAmount;
+        var kneeAmount = danceTime < 1.25 ? raised : 0;
+        var leftKnee = (0.5 + 0.5 * Math.sin(danceTime * 9)) * kneeAmount;
+        var rightKnee = (0.5 + 0.5 * Math.sin(danceTime * 9 + Math.PI)) * kneeAmount;
+        var victoryJump = 0;
+        if (danceTime >= 1.25 && danceTime <= 1.80) {
+          victoryJump = Math.sin((danceTime - 1.25) / 0.55 * Math.PI);
+        }
+
+        pose.leftArmUpper = mix(pose.leftArmUpper, -2.65, raised);
+        pose.leftArmLower = mix(pose.leftArmLower, -2.92 + leftWave, raised);
+        pose.rightArmUpper = mix(pose.rightArmUpper, 2.65, raised);
+        pose.rightArmLower = mix(pose.rightArmLower, 2.92 + rightWave, raised);
+        pose.leftLegUpper -= leftKnee * 0.25;
+        pose.leftLegLower += leftKnee * 0.30;
+        pose.rightLegUpper += rightKnee * 0.25;
+        pose.rightLegLower -= rightKnee * 0.30;
+        pose.bodyBob = Math.sin(danceTime * 9) * 1.2 * kneeAmount - victoryJump * 11;
+      }
+    }
+
+    return pose;
+  }
+
+  function drawJointedLimb(startX, startY, upperLength, lowerLength, upperAngle, lowerAngle) {
+    var jointX = startX + Math.sin(upperAngle) * upperLength;
+    var jointY = startY + Math.cos(upperAngle) * upperLength;
+    var endX = jointX + Math.sin(lowerAngle) * lowerLength;
+    var endY = jointY + Math.cos(lowerAngle) * lowerLength;
+    ctx.moveTo(startX, startY);
+    ctx.lineTo(jointX, jointY);
+    ctx.lineTo(endX, endY);
+  }
+
+  function drawSubjectAt(x, y, rotation) {
+    var pose = subjectPose();
+    ctx.save();
+    ctx.translate(x, y + pose.bodyBob);
+    ctx.rotate(rotation || 0);
+    ctx.strokeStyle = '#333';
+    ctx.fillStyle = '#333';
+    ctx.lineCap = 'round';
+
+    ctx.beginPath();
+    ctx.lineWidth = 4;
+    drawJointedLimb(-5, -4, 8.5, 8.5, pose.leftArmUpper, pose.leftArmLower);
+    drawJointedLimb(5, -4, 8.5, 8.5, pose.rightArmUpper, pose.rightArmLower);
+    drawJointedLimb(-3, 8, 9, 9, pose.leftLegUpper, pose.leftLegLower);
+    drawJointedLimb(3, 8, 9, 9, pose.rightLegUpper, pose.rightLegLower);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.lineWidth = 9;
+    ctx.moveTo(0, -5);
+    ctx.lineTo(0, 8);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.arc(0, -15, 7, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function drawSplitPortalSubject(depth) {
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(0, 0, W, floorPortal.y + 1);
+    ctx.clip();
+    drawSubjectAt(subject.x, subject.y, 0);
+    ctx.restore();
+
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(wallPortal.x, wallPortal.y - 32, W - wallPortal.x, wallPortal.h + 64);
+    ctx.clip();
+    drawSubjectAt(
+      wallPortal.x - 14 + depth * 0.8,
+      wallPortal.y + wallPortal.h / 2,
+      0
+    );
+    ctx.restore();
+  }
+
+  function drawSubject() {
+    if (portalEntryAnimation) {
+      drawSplitPortalSubject(portalOverlapDepth(subject.x, subject.y));
+      return;
+    }
+
+    if (portalExit) {
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(wallPortal.x, wallPortal.y - 32, W - wallPortal.x, wallPortal.h + 64);
+      ctx.clip();
+      drawSubjectAt(subject.x, subject.y, 0);
+      ctx.restore();
+      return;
+    }
+
+    if (!dragging || dragPortalDepth <= 0) {
+      var renderY = subject.y;
+      if (landingBounceActive) {
+        var platformSubjectY = landingBouncePlatformY - 26;
+        renderY = platformSubjectY + (subject.y - platformSubjectY) * 2.2;
+      }
+      drawSubjectAt(subject.x, renderY, 0);
+      return;
+    }
+
+    drawSplitPortalSubject(dragPortalDepth);
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, W, H);
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(0, 0, W, H);
+
+    ctx.fillStyle = '#fafafa';
+    ctx.fillRect(0, floorBackY, W, H - floorBackY);
+    ctx.strokeStyle = '#bbb';
+    ctx.beginPath();
+    ctx.moveTo(0, floorBackY);
+    ctx.lineTo(W, floorBackY);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(wallEdgeX, 0);
+    ctx.lineTo(wallEdgeX, leftPlatform.y - leftPlatform.depthY);
+    ctx.strokeStyle = '#b5b5b5';
+    ctx.stroke();
+
+    drawPlatform(leftPlatform);
+    drawPlatform(rightPlatform);
+    drawPortals();
+    drawArrow(72, 58, 'right');
+    drawArrow(floorPortal.x + floorPortal.w / 2, 306, 'down');
+    drawSubject();
+  }
+
+  function frame() {
+    var now = Date.now();
+    var dt = Math.min(0.026, Math.max(0, (now - previousTime) / 1000));
+    previousTime = now;
+    animationTime = now / 1000;
+    update(dt);
+    draw();
+    requestFrame(frame);
+  }
+
+  requestFrame(frame);
+})();
+</script>
+{% include "partials/about.html" %}
+</body>
+</html>
+

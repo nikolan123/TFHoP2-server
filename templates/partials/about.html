@@ -1,0 +1,240 @@
+<style>
+@font-face {
+  font-family: "Portal DIN";
+  src: url("/static/dinma98-webfont.woff") format("woff"),
+       url("../../static/dinma98-webfont.woff") format("woff");
+}
+
+#about {
+  max-width: 620px;
+  margin: 0 auto;
+  padding-top: 8px;
+  color: #222;
+  font-family: Arial, sans-serif;
+  text-align: center;
+}
+
+#about .about-kicker,
+#about .about-revived {
+  font-family: "Portal DIN", "Arial Narrow", Arial, sans-serif;
+  text-transform: uppercase;
+}
+
+#about .about-kicker {
+  margin: 0;
+  font-size: 14px;
+  letter-spacing: 0.12em;
+}
+
+#about .about-logo {
+  display: block;
+  width: 270px;
+  max-width: 100%;
+  height: auto;
+  margin: 0 auto;
+}
+
+#about .about-revived {
+  margin: 2px 0 12px;
+  font-size: 25px;
+  font-weight: normal;
+  letter-spacing: 0.18em;
+}
+
+#about .about-contact {
+  display: block;
+  margin: 0 0 14px;
+  text-align: center;
+}
+
+#about .about-contact-label {
+  display: inline-block;
+  width: 54px;
+  margin-right: 5px;
+  font-family: "Portal DIN", "Arial Narrow", Arial, sans-serif;
+  font-size: 11px;
+  text-align: right;
+}
+
+#about .about-contact code {
+  display: inline-block;
+  min-width: 215px;
+  margin: 0 0 5px;
+  padding: 6px 9px;
+  border: 1px solid #aaa;
+  color: #222;
+  background: #f3f3f3;
+  font-family: Consolas, "Courier New", monospace;
+  font-size: 11px;
+  text-align: left;
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+#about h2 {
+  margin: 22px 0 8px;
+  font-family: "Portal DIN", "Arial Narrow", Arial, sans-serif;
+  font-size: 18px;
+  font-weight: normal;
+  text-transform: uppercase;
+}
+
+#about p {
+  margin: 0 0 12px;
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+#about .about-disclaimer {
+  color: #666;
+  font-size: 12px;
+}
+
+#about .about-credit {
+  margin-top: 20px;
+  font-family: "Portal DIN", "Arial Narrow", Arial, sans-serif;
+  text-transform: uppercase;
+}
+
+.about-info-button {
+  position: fixed;
+  right: 8px;
+  bottom: 8px;
+  z-index: 9998;
+  width: 27px;
+  height: 27px;
+  padding: 0;
+  border: 1px solid #555;
+  border-radius: 0;
+  color: #fff;
+  background: #222;
+  font-family: Arial, sans-serif;
+  font-size: 17px;
+  font-weight: bold;
+  line-height: 25px;
+  text-align: center;
+  cursor: pointer;
+  opacity: 0.82;
+}
+
+.about-info-button:hover,
+.about-info-button:focus {
+  opacity: 1;
+}
+
+.about-popup {
+  display: none;
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 9999;
+  background: rgba(0, 0, 0, 0.62);
+}
+
+.about-popup-panel {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 86%;
+  max-width: 660px;
+  max-height: 84%;
+  padding: 22px 26px 26px;
+  overflow-y: auto;
+  border: 1px solid #777;
+  background: #fff;
+  -webkit-transform: translate(-50%, -50%);
+  transform: translate(-50%, -50%);
+}
+
+.about-popup-close {
+  float: right;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  color: #333;
+  background: transparent;
+  font-family: Arial, sans-serif;
+  font-size: 24px;
+  line-height: 26px;
+  cursor: pointer;
+}
+</style>
+
+<button class="about-info-button" id="about-popup-trigger" type="button" aria-label="About this project">i</button>
+
+<div class="about-popup" id="about-popup" aria-hidden="true">
+  <div class="about-popup-panel" role="dialog" aria-modal="true" aria-labelledby="about-title">
+    <button class="about-popup-close" id="about-popup-close" type="button" aria-label="Close">&times;</button>
+
+<section id="about" aria-labelledby="about-title">
+  <p class="about-kicker">The Final Hours of</p>
+  <img
+    class="about-logo"
+    src="/static/portal-2-official-logo.png"
+    data-file-preview="../../static/portal-2-official-logo.png"
+    onerror="this.onerror=null; this.src=this.getAttribute('data-file-preview');"
+    alt="Portal 2"
+  >
+  <h1 class="about-revived" id="about-title">Revived</h1>
+
+  <div class="about-contact" aria-label="Project contact information">
+    <div><span class="about-contact-label">GITHUB</span><code>github.com/nikolan123/TFHoP2-server</code></div>
+    <div><span class="about-contact-label">EMAIL</span><code>niko@nikolan.net</code></div>
+  </div>
+
+  <h2>About the project</h2>
+  <p>
+    A preservation project restoring the ebook's lost online features, including
+    polls, videos, audio previews, and interactive content.
+  </p>
+  <p>
+    The goal is to preserve the original experience and keep The Final Hours of
+    Portal 2 complete and functional without depending on disappearing services.
+  </p>
+
+  <h2>Disclaimer</h2>
+  <p class="about-disclaimer">
+    This is an unofficial fan preservation project and is not affiliated with,
+    sponsored by, or endorsed by Valve Corporation. Portal, Portal 2, and related
+    material belong to their respective owners. Rights holders or original
+    contributors with concerns about rehosted material may contact me above.
+  </p>
+
+  <p class="about-credit">Made by Niko &lt;3</p>
+</section>
+  </div>
+</div>
+
+<script>
+(function () {
+  var trigger = document.getElementById('about-popup-trigger');
+  var popup = document.getElementById('about-popup');
+  var close = document.getElementById('about-popup-close');
+
+  function openAbout() {
+    popup.style.display = 'block';
+    popup.setAttribute('aria-hidden', 'false');
+    close.focus();
+  }
+
+  function closeAbout() {
+    popup.style.display = 'none';
+    popup.setAttribute('aria-hidden', 'true');
+    trigger.focus();
+  }
+
+  trigger.addEventListener('click', openAbout, false);
+  close.addEventListener('click', closeAbout, false);
+  popup.addEventListener('click', function (event) {
+    if (event.target === popup) closeAbout();
+  }, false);
+  document.addEventListener('keydown', function (event) {
+    if ((event.key === 'Escape' || event.keyCode === 27) && popup.style.display === 'block') {
+      closeAbout();
+    }
+  }, false);
+})();
+</script>

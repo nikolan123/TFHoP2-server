@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+<meta name="viewport" content="width=device-width; initial-scale=1.0; maximum-scale=1.0;">
+<title>Comments</title>
+<style>
+html,body,div,span,object,iframe,h1,h2,h3,h4,h5,h6,p,blockquote,pre,abbr,address,cite,code,del,dfn,em,img,ins,kbd,q,samp,small,strong,sub,sup,var,b,i,dl,dt,dd,ol,ul,li,fieldset,form,label,legend,table,caption,tbody,tfoot,thead,tr,th,td,article,aside,figure,footer,header,hgroup,menu,nav,section,time,mark,audio,video{margin:0;padding:0;border:0;outline:0;font-size:100%;vertical-align:baseline;background:transparent}
+article,aside,figure,footer,header,hgroup,nav,section{display:block}
+nav ul{list-style:none}
+blockquote,q{quotes:none}
+blockquote:before,blockquote:after,q:before,q:after{content:'';content:none}
+a{margin:0;padding:0;font-size:100%;vertical-align:baseline;background:transparent}
+ins{background-color:#ff9;color:#000;text-decoration:none}
+mark{background-color:#ff9;color:#000;font-style:italic;font-weight:bold}
+del{text-decoration:line-through}
+abbr[title],dfn[title]{border-bottom:1px dotted #000;cursor:help}
+table{border-collapse:collapse;border-spacing:0}
+hr{display:block;height:1px;border:0;border-top:1px solid #ccc;margin:1em 0;padding:0}
+input,select{vertical-align:middle}
+.clearfix:after{content:".";display:block;height:0;clear:both;visibility:hidden}
+.clearfix{display:inline-block}
+* html .clearfix{height:1%}
+.clearfix{display:block}
+.mt10{margin-top:10px}
+html,body{width:100%;overflow-x:hidden}
+body{background:#2cb2e5}
+.feedback{background:url("/static/feedback.jpg") no-repeat scroll center top #2cb2e5;position:fixed;left:0;top:0;width:50%;height:100%;display:block;z-index:200}
+.comment-container{box-sizing:border-box;width:50%;color:#464243;font-family:Verdana,Arial,sans-serif;font-size:12px;margin-left:50%;background:#f7f7f7;padding-bottom:10px;overflow:hidden}
+.comment-container .error{background:#c00;color:#fff;padding:5px 10px;margin:5px 0 10px}
+.comment-container .comment,.comment-container .comment-form{padding:10px;border-bottom:solid 3px #7b797a;background:#f7f7f7}
+.comment-container .comment-form{border-top:solid 3px #7b797a}
+.comment-container .comment p{padding:5px;white-space:pre-wrap;word-wrap:break-word;overflow-wrap:break-word}
+.comment-container .comment .posttime{font-size:11px}
+.comment-container .comment-pages{list-style:none;margin:10px 0}
+.comment-container .comment-pages li{list-style:none;float:left;margin-right:3px;line-height:30px}
+.comment-container .comment-pages li a,.comment-container button{padding:6px 10px;text-decoration:none;color:#fff;background:#464243;border:none}
+.comment-container .comment-pages li a:hover,.comment-container .comment-pages .active a,.comment-container button:hover{color:#fff;background:#2db0e4}
+.comment-container .comment-form p{line-height:18px;padding:10px 0}
+.comment-container .comment-form label{font-weight:bold;padding:10px 0 5px}
+.comment-container .comment-form input,.comment-container .comment-form textarea{box-sizing:border-box;width:100%;display:block;border:solid 1px #aaa;padding:4px;font-family:Verdana,Arial,sans-serif;font-size:11px;margin-bottom:4px}
+.form-thanks{padding:10px;background:#2ab1e8;color:#fff;display:block;line-height:18px}
+#frmlogin{position:absolute;top:0;left:0;z-index:300}
+</style>
+</head>
+<body>
+<div id="wrapper">
+<div class="feedback"></div>
+<div class="comment-container" id="scroller">
+<div class="comment-form">
+{% if posted %}<div class="form-thanks">Thank you. Your comment has been posted.</div>{% endif %}
+{% if error %}<div class="error">{{ error }}</div>{% endif %}
+<form id="frmcomment" method="post" action="/p2/index.php5">
+<label for="name" class="clearfix">Name:</label>
+<input type="text" name="name" id="name" value="{{ name }}" maxlength="80">
+<label for="comment" class="clearfix">Comment:</label>
+<textarea name="comment" id="comment" rows="5" maxlength="2000">{{ comment }}</textarea>
+<button name="post" id="post" type="submit">Post comment</button>
+</form>
+</div>
+<div class="comments">
+{% for entry in comments %}
+<div class="comment"><p>{{ entry.comment }}</p><p class="posttime"><strong>{{ entry.name }}</strong> posted at {{ entry.posttime }}</p></div>
+{% endfor %}
+</div>
+{% if total_pages > 1 %}
+<div class="mt10"><strong>MORE COMMENTS</strong></div>
+<ul class="comment-pages clearfix">
+{% for page_number in range(1, total_pages + 1) %}<li{% if page_number == page %} class="active"{% endif %}><a href="/p2/index.php5?page={{ page_number }}">{{ page_number }}</a></li>{% endfor %}
+</ul>
+{% endif %}
+</div>
+</div>
+{% include "partials/about.html" %}
+</body>
+</html>

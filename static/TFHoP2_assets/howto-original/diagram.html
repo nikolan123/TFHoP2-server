@@ -1,0 +1,361 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<title>Interactive Portal Diagram</title>
+
+<!-- Import EaselJS Framework -->
+<script src="easel.js"></script>
+<!-- End EaselJS Imports -->
+
+
+<script>
+var canvas;
+var stage;
+var bg;
+var w;
+var h;
+var dw = 30;
+var dh = -20;
+var dude;
+var dudeImage;
+var portalDude;
+var dudeHeight = 80;
+var dudeRadius = 20;
+var portalRadius = 45;
+var dragProps;
+var gravity;
+var portal0;
+var portal1;
+var idle;
+var leftPortal = false;
+var victory = false;
+var update = false;
+
+// defines rectangles as ratios of canvas size:
+var initRects = [new Rectangle(-0.3,-0.5,0.3,1.5), new Rectangle(0.2,1,0.5,0.3), new Rectangle(0,0.7,0.2,0.3), new Rectangle(0.7,0.6,0.3,0.4),new Rectangle(1,-0.5,0.3,1.5)];
+//					0,left wall							1,floor						2,left box							3,right box					4,right wall
+var rects = [];
+
+function init() {
+    dudeImage = new Image();
+    dudeImage.onload = initDiagram;
+    dudeImage.src = 'portalGuy_black.png';
+}
+
+function initDiagram() {
+	// create a new stage and point it at our canvas:
+	canvas = document.getElementById("testCanvas");
+	stage = new Stage(canvas, 'ontouchstart' in window);
+	stage.snapToPixelEnabled = true;
+	
+	var r;
+	var ctx = canvas.getContext("2d");
+
+	w = canvas.width-dw;
+	h = canvas.height;
+	gravity = h*0.007;
+
+	for (var i=0; i<initRects.length; i++) {
+		var r = initRects[i];
+		rects[i] = new Rectangle(r.x*w, r.y*h, r.width*w, r.height*h);
+	}
+
+	portal0 = new Shape();
+	drawPortal(portal0, "#FF9900", "#FFFF33", "rgba(255, 255, 255, 0.5)");
+	portal0.x = dw/2;
+	portal0.y = h*0.02+portalRadius;
+	portal0.scaleX = dw/100*0.6;
+	
+	portal1 = new Shape();
+	r = rects[1];
+	drawPortal(portal1, "#0066FF", "#33FFFF", "rgba(255, 255, 255, 0.5)");
+	portal1.x = r.x+r.width/2+dw/2;
+	portal1.y = h+dh/2;
+	portal1.scaleY = dh/100*0.6;
+
+	var walls = new Shape();
+	drawRects(walls);
+
+	var arrow = new Shape();
+	arrow.graphics.f("#BBB").dr(-11.5,-11.5,25,25).f("#ffffff").s("#CCCCCC").dr(-12.5,-12.5,25,25);
+	arrow.graphics.f("#CCCCCC").mt(9.5,0).s().lt(0.5,-9).lt(-6.2,-9).lt(0.1,-2.7).lt(-9.4,-2.7).lt(-9.4,2.7).lt(0.1,2.7).lt(-6.2,9).lt(0.5,9).lt(9.5,0);
+	arrow.setTransform(portal0.x+dw+20,portal0.y);
+
+	var arrow2 = arrow.clone();
+	arrow2.setTransform(portal1.x, portal1.y+dh-20,1,1,90);
+
+	// we can cache the whole background so it doesn't need to be re-rendered:
+	var bg = new Container();
+	bg.addChild(walls, arrow, arrow2, portal0, portal1);
+	bg.cache(0,0,w+dw,h);
+	bg.snapToPixel = true;
+	stage.addChild(bg);
+    
+    var frameData = {
+        portalGuyIdle01:[0,39],
+        portalGuyIdle02:[41,80],
+        portalGuySquirm:[82,121],
+        portalGuyVictory01:[123,162],
+        portalGuyVictory02:[164,203]
+	};
+    
+    var spriteSheet = new SpriteSheet(dudeImage,58,80,frameData);
+
+    dude = new BitmapSequence(spriteSheet);
+    dude.graphics = new Graphics(canvas);
+    dude.graphics.beginFill("#ffffff").drawRect(0,0,dudeRadius*2,dudeHeight);
+    dude.gotoAndStop(0);
+    idle = setTimeout(playIdle, 5000)
+	r = rects[2];
+	dude.regX = (dude.spriteSheet.frameWidth/2)-dw/2-2;
+	dude.regY = 85;//dudeHeight-dh/2;
+	dude.x = r.x+r.width/2;
+	dude.y = 0;
+	dude.velX = 0;
+	dude.velY = 0;
+	//dude.cache(0,0,2*dudeRadius,dudeHeight); // not necessary with BitmapSeq
+	dude.snapToPixel = true;
+    
+	stage.onPress = function(evt) {
+		victory = leftPortal = false;
+		dragProps = {offX:dude.x-evt.stageX, offY:dude.y-evt.stageY, x:dude.x, y:dude.y, pos:[new Point(dude.x, dude.y)]};
+		playSquirm();
+		update = true;
+		
+		evt.onMouseMove = function(ev) {
+			dragProps.x = ev.stageX+dragProps.offX;
+			dragProps.y = ev.stageY+dragProps.offY;
+		}
+		evt.onMouseUp = function(ev) {
+			var l = dragProps.pos.length-1;
+			dude.velX = (dragProps.pos[l].x-dragProps.pos[0].x)/5;
+			dude.velY = Math.max(-20,(dragProps.pos[l].y-dragProps.pos[0].y)/5);
+			dragProps = null;
+            dude.gotoAndStop(0);
+            update = false;
+            stage.update();
+            startIdleTimer();
+		}
+	}
+
+	portalDude = dude.clone();
+    portalDude.gotoAndStop(0);
+	portalDude.y = portal0.y+dudeHeight/2-dh/2;
+	portalDude.visible = false;
+
+	// draw some slices into the foreground:
+	stage.update();
+	var fg = new Container();
+	var offsetX = 1.5; // honestly not sure why this is needed.
+	var offsetY = 1;
+	r = rects[3];
+	fg.addChild(getSlice(ctx, r.x+1, r.y+dh/2+offsetY, dw, r.height+offsetY));
+	fg.addChild(getSlice(ctx, portal1.x-portalRadius-1, portal1.y, portalRadius*2+2, h-portal1.y+offsetY));
+	fg.addChild(getSlice(ctx, offsetX, portal0.y-portalRadius, portal0.x+1, portalRadius*2));
+	fg.cache(0,portal0.y-portalRadius,r.x+dw,h-(portal0.y-portalRadius)+offsetY);
+	fg.y = -offsetY;
+	fg.x = -offsetX;
+
+	fg.snapToPixel = true;
+
+	stage.addChild(dude,portalDude,fg);
+
+	// split the floor to allow the dude to fall through the portal:
+	r = rects[1];
+	rects[1] = new Rectangle(r.x,r.y,r.width/2-portalRadius+5,r.height);
+	rects.splice(1,0,new Rectangle(r.x+r.width/2+portalRadius-5,r.y,r.width/2-portalRadius+5,r.height));
+    
+	Ticker.setFPS(16);
+	Ticker.addListener(window);
+}
+
+
+function pauseIdleTimer() {
+    clearTimeout(idle);
+}
+
+function startIdleTimer() {
+   dude.callback = null;
+   var time = Math.max(5000, Math.random()*15000|0);
+   idle = setTimeout(playIdle, time)
+}
+
+function playIdle() {
+    update = true;
+    dude.callback = handleAdmimComplete;
+    dude.gotoAndPlay("portalGuyIdle0"+(Math.random()>.5?1:2));
+}
+
+function playSquirm() {
+    pauseIdleTimer();
+    dude.callback = null;
+    dude.gotoAndPlay("portalGuySquirm");
+}
+
+function handleAdmimComplete() {
+    dude.callback = null;
+    dude.gotoAndStop("portalGuyIdle01");
+    update = false;
+    startIdleTimer();
+}
+
+function playVictory() {
+    dude.callback = handleAdmimComplete;
+    dude.gotoAndPlay("portalGuyVictory0"+(Math.random()>.5?1:2));
+}
+
+function getSlice(ctx, x, y, width, height) {
+	var data = ctx.getImageData(x,y,width,height);
+	var c = document.createElement("canvas");
+	c.width = width;
+	c.height = height;
+	c.getContext("2d").putImageData(data,0,0);
+	var bmp = new Bitmap(c);
+	bmp.x = x;
+	bmp.y = y;
+	return bmp;
+}
+
+var wasInPortal = false;
+var count=0;
+function tick() {
+	// GDS: debug, remove!
+	//if (++count % 20 == 0) { console.log(Ticker.getMeasuredFPS()|0); }
+
+	var oldX = dude.x|0;
+	var oldY = dude.y|0;
+	
+	if (dragProps) {
+		dragProps.pos.push(new Point(dragProps.x, dragProps.y));
+		if (dragProps.pos.length > 5) { dragProps.pos.shift(); }
+		dude.velX *= 0.5;
+		dude.velY *= 0.5;
+		dude.velX += (dragProps.x-dude.x)*0.2;
+		dude.velY += (dragProps.y-dude.y)*0.2;
+	} else {
+		dude.velY += gravity;
+	}
+
+	dude.velY *= 0.99;
+	dude.velX *= 0.96;
+	dude.x += dude.velX;
+	dude.y += dude.velY;
+
+
+	var l = rects.length;
+	var dr = dudeRadius;
+	var onTarget = false;
+	var bump = false;
+	for (var i=0; i<l; i++) {
+		var r = rects[i];
+		// only need to test top surfaces:
+		if (dude.y > r.y) {
+			if (dude.x+dr > r.x && dude.x-dr < r.x+r.width) {
+				if (dude.velY > 0 && (dude.y-r.y <= dude.velY*1.1)) {
+					bump |= (dude.velY > gravity*2);
+					dude.velY *= -0.3;
+					dude.y = r.y;
+					dude.velX *= 0.7;
+					if (i == 4) { onTarget = true; }
+				} else {
+					bump |= (Math.abs(dude.velX) > 4);
+					if (dude.velX > 0) { dude.x = r.x-dr; }
+					else (dude.x = r.x+r.width+dr);
+					dude.velX *= -0.2;
+				}
+			}
+		}
+	}
+
+	// handle portal:
+	if (dude.y > h) {
+		var r = (dude.y-h)/dudeHeight;
+		if (r > 1 && !dragProps) {
+			dude.x = dw/2-dudeRadius*2+dudeRadius*2*r;
+			dude.y = portalDude.y;
+			dude.velX = dude.velY;
+			dude.velY = 0;
+			leftPortal = true;
+            wasInPortal = false;
+            pauseIdleTimer();
+		} else {
+			portalDude.visible = true;
+			portalDude.x = dw/2-dudeRadius*2+dudeRadius*2*r+12;
+            dude.gotoAndStop(0);
+            pauseIdleTimer();
+            wasInPortal = true;
+		}
+       
+	} else {
+		portalDude.visible = false;
+        if (wasInPortal == true) {
+            wasInPortal = false;
+            playSquirm();
+        }
+	}
+
+	if (bump && !dragProps) {
+		//playSound("bump");
+	}
+
+	if (onTarget && Math.abs(dude.velX) < 1 && leftPortal && !victory) {
+		victory = true;
+        playVictory();
+		//playSound("victory");
+	}
+	
+	update = update || (dude.x|0) != oldX || (dude.y|0) != oldY;
+
+	// update the stage only if it needs it (so we don't use CPU when there's no interaction / animation):
+	if (update) { stage.update(); }; // else { console.log("no update"); }
+}
+
+function drawRects(shape) {
+	var g = shape.graphics;
+	g.beginStroke("#AAAAAA");
+	for (var i=0; i<rects.length-1; i++) {
+		var rect = rects[i];
+		// front face:
+		var x = Math.round(rect.x)+0.5;
+		var y = Math.round(rect.y)+0.5;
+		var x1 = Math.round(rect.x+rect.width)+0.5;
+		var y1 = Math.round(rect.y+rect.height)+0.5;
+		if (rect.x+rect.width > 0 && rect.y < h) {
+			g.beginFill("#E9E9E9").drawRect(x, y, x1-x+1, y1-y);
+		}
+		// right face:
+		if (rect.x+rect.width <= w+dw && rect.y < h) {
+			g.beginFill("#E0E0E0").moveTo(x1, y)
+				.lineTo(x1+dw, y+dh)
+				.lineTo(x1+dw, y1+dh)
+				.lineTo(x1, y1)
+				.closePath();
+		}
+		// top face:
+		if (rect.y > 0) {
+			g.beginLinearGradientFill(["#D3D3D3","#F6F6F6"],[0,1],rect.x,0,rect.x+80,0)
+				.moveTo(x, y)
+				.lineTo(x+dw, y+dh)
+				.lineTo(x1+dw, y+dh)
+				.lineTo(x1, y)
+				.closePath();
+		}
+	}
+}
+
+function drawPortal(portal, color1, color2, color3) {
+	portal.graphics.beginStroke("#CCCCCC")
+		.beginRadialGradientFill([color3,color2,color1], [0.4,0.8,1], 0,0,0, 0,0,portalRadius)
+		.drawCircle(0,0,portalRadius);
+}
+
+</script>
+</head>
+	
+<body onload="init();">
+    <div class="canvasHolder">
+		<canvas id="testCanvas" width="415" height="311" style="background-color:#FAFAFA"></canvas>
+	</div>
+</body>
+</html>

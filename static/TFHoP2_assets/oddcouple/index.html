@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Widget Test: 360 View</title>
+
+		<meta name="viewport" content="width=device-width,minimum-scale=1.0,maximum-scale=1.0,user-scalable=0,target-densitydpi=device-dpi"/>
+		<meta name="apple-mobile-web-app-capable" content="yes" />
+
+		<style type="text/css">
+			html, body {
+				margin: 0; height: 326; width: 444;
+				-webkit-user-select: none;
+			}
+		</style>
+
+	</head>
+	<body>
+		<div id="testWidget"></div>
+		<script src="360Viewer-widget-generic.js"></script>
+
+		<script type="text/javascript">
+			var testWidget = new ww.ThreeSixtyViewer({
+				parentNode: embed.byId('testWidget')
+			});
+		</script>
+	</body>
+</html>

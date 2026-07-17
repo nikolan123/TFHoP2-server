@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Final Hours of Portal 2 — Revived</title>
+<style>
+@font-face {
+  font-family: "Portal DIN";
+  src: url("{{ url_for('static', path='dinma98-webfont.woff') }}") format("woff");
+  font-weight: normal;
+  font-style: normal;
+}
+
+* { box-sizing: border-box; }
+
+html {
+  min-height: 100%;
+  background-color: #e7e9e7;
+  background-image:
+    linear-gradient(to right, #c4c9c6 1px, transparent 1px),
+    linear-gradient(to bottom, #c4c9c6 1px, transparent 1px),
+    linear-gradient(to bottom, #f0f2ef 0%, #dfe3df 72%, #c8cdca 100%);
+  background-size: 78px 78px, 78px 78px, 100% 100%;
+  background-attachment: fixed;
+}
+
+body {
+  margin: 0;
+  padding: 26px 18px 32px;
+  color: #222;
+  background: transparent;
+  font-family: Arial, Helvetica, sans-serif;
+  text-align: center;
+}
+
+main {
+  width: 100%;
+  max-width: 660px;
+  margin: 0 auto;
+}
+
+.kicker,
+.revived,
+h2,
+.service-name,
+.button,
+.credit {
+  font-family: "Portal DIN", "Arial Narrow", Arial, sans-serif;
+  text-transform: uppercase;
+}
+
+.kicker {
+  margin: 0;
+  font-size: 14px;
+  letter-spacing: 0.12em;
+}
+
+.logo {
+  display: block;
+  width: 270px;
+  max-width: 100%;
+  height: auto;
+  margin: 0 auto;
+}
+
+.revived {
+  margin: 2px 0 18px;
+  font-size: 25px;
+  font-weight: normal;
+  letter-spacing: 0.18em;
+}
+
+.intro {
+  max-width: 570px;
+  margin: 0 auto 16px;
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+.major-actions {
+  max-width: 570px;
+  margin: 0 auto 24px;
+}
+
+.major-link {
+  display: block;
+  width: 100%;
+  margin: 7px 0;
+  padding: 12px 16px;
+  border: 1px solid #111;
+  color: #fff;
+  background: #222;
+  font-family: "Portal DIN", "Arial Narrow", Arial, sans-serif;
+  font-size: 15px;
+  text-transform: uppercase;
+  text-decoration: none;
+}
+
+.major-link:hover,
+.major-link:focus {
+  border-color: #078dbd;
+  background: #17a8dd;
+}
+
+.major-link.orange:hover,
+.major-link.orange:focus {
+  border-color: #d25a16;
+  background: #f4762b;
+}
+
+h2 {
+  margin: 24px 0 9px;
+  font-size: 18px;
+  font-weight: normal;
+}
+
+.services {
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid #bbb;
+  list-style: none;
+  text-align: left;
+}
+
+.services li {
+  padding: 9px 4px;
+  border-bottom: 1px solid #ddd;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.service-name {
+  display: inline-block;
+  min-width: 132px;
+  color: #333;
+}
+
+.actions {
+  margin: 15px 0 0;
+  text-align: center;
+}
+
+.button {
+  display: inline-block;
+  min-width: 112px;
+  margin: 4px 2px;
+  padding: 8px 12px;
+  border: 0;
+  color: #fff;
+  background: #222;
+  font-size: 12px;
+  text-decoration: none;
+}
+
+.button:hover,
+.button:focus {
+  background: #17a8dd;
+}
+
+.button.orange:hover,
+.button.orange:focus {
+  background: #f4762b;
+}
+
+.disclaimer {
+  margin: 25px auto 0;
+  color: #666;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.credit {
+  margin: 18px 0 0;
+  font-size: 13px;
+}
+
+@media (max-width: 500px) {
+  body { padding: 18px 14px 26px; }
+  .service-name {
+    display: block;
+    margin-bottom: 2px;
+  }
+}
+</style>
+</head>
+<body>
+<main>
+  <p class="kicker">The Final Hours of</p>
+  <img class="logo" src="{{ url_for('static', path='portal-2-official-logo.png') }}" alt="Portal 2">
+  <h1 class="revived">Revived</h1>
+
+  <p class="intro">
+    A preservation server restoring retired online features used by Geoff Keighley's
+    interactive ebook, <em>The Final Hours of Portal 2</em>.
+  </p>
+
+  <div class="major-actions" aria-label="Get started">
+    <a class="major-link" href="https://builds.nikolan.net/download/nikolan123_s_TFHoP2-patcher/latest/windows-patcher/Portal-2-The-Final-Hours-Patcher.exe" target="_blank" rel="noopener">Download the patcher</a>
+    <a class="major-link orange" href="https://nikolan.net/posts/portal2/" target="_blank" rel="noopener">How to install</a>
+  </div>
+
+  <h2>Restored services</h2>
+  <ul class="services">
+    <li><span class="service-name">Polls</span>Original questions with fixed backend.</li>
+    <li><span class="service-name">Feedback</span>The final comments page, including preserved historical posts.</li>
+    <li><span class="service-name">Audio</span>Legacy preview addresses redirected to surviving music previews.</li>
+    <li><span class="service-name">Video</span>A compatibility player for the ebook's obsolete YouTube Flash API.</li>
+    <li><span class="service-name">Interactives</span>Recovered diagrams and web-based interactive features.</li>
+  </ul>
+
+  <div class="actions" aria-label="Service demonstrations">
+    <a class="button" href="https://github.com/nikolan123/TFHoP2-server" target="_blank" rel="noopener">GitHub</a>
+    <a class="button orange" href="https://nikolan.net/posts/portal2/" target="_blank" rel="noopener">Blog post</a>
+    <a class="button" href="mailto:niko@nikolan.net">Contact</a>
+  </div>
+
+  <p class="disclaimer">
+    This is an unofficial fan preservation project and is not affiliated with,
+    sponsored by, or endorsed by Valve Corporation. Portal, Portal 2, and related
+    material belong to their respective owners.
+  </p>
+  <p class="credit">Made by Niko &lt;3</p>
+</main>
+</body>
+</html>

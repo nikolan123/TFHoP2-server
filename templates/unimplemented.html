@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Final Hours of Portal 2 Revived</title>
+<style>
+@font-face {
+  font-family: "Portal DIN";
+  src: url("{{ url_for('static', path='dinma98-webfont.woff') }}") format("woff");
+  font-weight: normal;
+  font-style: normal;
+}
+
+* { box-sizing: border-box; }
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+}
+
+html {
+  width: 100%;
+  max-width: 100%;
+  background-color: #e7e9e7;
+  background-image:
+    linear-gradient(to right, #c4c9c6 1px, transparent 1px),
+    linear-gradient(to bottom, #c4c9c6 1px, transparent 1px),
+    linear-gradient(to bottom, #f0f2ef 0%, #dfe3df 72%, #c8cdca 100%);
+  background-size: 78px 78px, 78px 78px, 100% 100%;
+}
+
+body {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: auto;
+  height: auto;
+  padding: 22px;
+  color: #222;
+  font-family: Arial, Helvetica, sans-serif;
+  text-align: center;
+}
+
+main {
+  width: 100%;
+  max-width: 520px;
+}
+
+.message {
+  font-family: "Portal DIN", "Arial Narrow", Arial, sans-serif;
+  text-transform: uppercase;
+}
+
+.message {
+  margin: 0 0 6px;
+  font-size: 18px;
+}
+
+.subtext {
+  margin: 0 0 16px;
+  color: #555;
+  font-size: 14px;
+}
+
+.contact {
+  white-space: nowrap;
+}
+
+.contact-label {
+  display: inline-block;
+  width: 54px;
+  margin-right: 5px;
+  font-family: "Portal DIN", "Arial Narrow", Arial, sans-serif;
+  font-size: 11px;
+  text-align: right;
+}
+
+.contact code {
+  display: inline-block;
+  min-width: 215px;
+  padding: 6px 9px;
+  border: 1px solid #aaa;
+  color: #222;
+  background: #f3f3f3;
+  font-family: Consolas, "Courier New", monospace;
+  font-size: 11px;
+  text-align: left;
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+@media (max-height: 280px) {
+  body { padding: 12px; }
+  .message { font-size: 16px; }
+}
+
+</style>
+</head>
+<body>
+<main>
+  <p class="message">I have no clue what goes here</p>
+  <p class="subtext">If you do, please let me know.</p>
+  <div class="contact"><span class="contact-label">EMAIL</span><code>niko@nikolan.net</code></div>
+</main>
+</body>
+</html>
