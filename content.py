@@ -81,7 +81,7 @@ POLLS = {
         ],
     },
     20: {
-        "question": "WHAT KIND OF DLC WOULD YOU LIKE FOR PORTAL 2?",
+        "question": "WHAT KIND OF DLC WOULD YOU LIKE TO SEE IN PORTAL 2?",
         "options": [
             "NEW SINGLE PLAYER",
             "NEW CO-OP TRACK",
