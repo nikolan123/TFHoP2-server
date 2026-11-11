@@ -80,4 +80,13 @@ POLLS = {
             'NOPE, IT IS CALLED "PORTAL"',
         ],
     },
+    20: {
+        "question": "WHAT KIND OF DLC WOULD YOU LIKE FOR PORTAL 2?",
+        "options": [
+            "NEW SINGLE PLAYER",
+            "NEW CO-OP TRACK",
+            "A NEW GAME MODE",
+            "I DON'T WANT MORE DLC",
+        ],
+    },
 }

@@ -9,7 +9,7 @@ A list of all the URLs for services and their preservation status
 - [x] **Chapter 9, page 6 — Poll 3:** `http://www.gameslice.com/p2polls/poll3.php5`
 - [x] **Chapter 12, page 6 — Poll 4:** `http://ww.gameslice.com/p2polls/poll4.php5`
 - [x] **Chapter 13, page 3 — Poll 5:** `http://www.gameslice.com/p2polls/poll5.php5`
-- [ ] **Chapter 14, page 5 — Poll 20:** `http://geoffkeighley.com/p2polls/poll.php5?id=20`
+- [x] **Chapter 14, page 5 — Poll 20:** `http://geoffkeighley.com/p2polls/poll.php5?id=20` (question wording reconstructed from a partially cropped screenshot)
 - [ ] **Chapter 14, page 8 — Poll 21:** `http://geoffkeighley.com/p2polls/poll.php5?id=21`
 
 ## Web interactives and 3D content

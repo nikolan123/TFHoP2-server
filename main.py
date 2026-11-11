@@ -139,6 +139,13 @@ async def poll(request: Request, poll_id: int):
     if poll_data is None:
         raise HTTPException(status_code=404, detail="Poll not found")
 
+    poll_url = request.url.path
+    if poll_url == "/p2polls/poll.php5":
+        poll_url += f"?id={poll_id}"
+        results_url = f"{poll_url}&results=1"
+    else:
+        results_url = f"{poll_url}?results=1"
+
     show_results = request.query_params.get("results") == "1"
     if request.method == "POST":
         form = parse_qs((await request.body()).decode("utf-8"))
@@ -165,6 +172,8 @@ async def poll(request: Request, poll_id: int):
         name="poll.html",
         context={
             "poll_id": poll_id,
+            "poll_url": poll_url,
+            "results_url": results_url,
             "poll": poll_data,
             "show_results": show_results,
             "vote_counts": vote_counts,
@@ -176,9 +185,12 @@ async def poll(request: Request, poll_id: int):
 
 @app.api_route("/p2polls/poll.php5", methods=["GET", "POST"])
 @app.api_route("/p2polls/subscribe/index.php5", methods=["GET", "POST"])
-def unrecovered_content(request: Request, id: int | None = None):
-    if request.url.path.endswith("/poll.php5") and id not in {20, 21}:
-        raise HTTPException(status_code=404, detail="Poll not found")
+async def unrecovered_content(request: Request, id: int | None = None):
+    if request.url.path == "/p2polls/poll.php5":
+        if id == 20:
+            return await poll(request, id)
+        if id != 21:
+            raise HTTPException(status_code=404, detail="Poll not found")
 
     return templates.TemplateResponse(
         request=request,

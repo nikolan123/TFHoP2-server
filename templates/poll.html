@@ -24,17 +24,17 @@ h2{font-size:14px;line-height:1.5em;padding:0 0 5px;text-align:center}
 <body>
 <div id="poll">
 <h2>{{ poll.question }}</h2>
-<form id="answers" method="post" action="/p2polls/poll{{ poll_id }}.php5"{% if show_results %} style="display:none"{% endif %}>
+<form id="answers" method="post" action="{{ poll_url }}"{% if show_results %} style="display:none"{% endif %}>
 {% for option in poll.options %}
 <label><input type="radio" name="vote" value="{{ loop.index0 }}">{{ option }}</label>
 {% endfor %}
-<div id="footer"><a href="/p2polls/poll{{ poll_id }}.php5?results=1">View Results</a><input class="button" type="submit" value="Vote"></div>
+<div id="footer"><a href="{{ results_url }}">View Results</a><input class="button" type="submit" value="Vote"></div>
 </form>
 <div id="results"{% if not show_results %} style="display:none"{% endif %}>
 {% for option in poll.options %}
 <label>{{ option }}</label><div class="barempty"><div class="barfull" data-width="{{ percentages[loop.index0] }}" style="width:{{ percentages[loop.index0] }}%"></div><div class="barvalue">{{ percentages[loop.index0] }}%</div></div>
 {% endfor %}
-<div id="footer"><a href="/p2polls/poll{{ poll_id }}.php5">View Poll</a></div>
+<div id="footer"><a href="{{ poll_url }}">View Poll</a></div>
 </div>
 </div>
 {% include "partials/about.html" %}
